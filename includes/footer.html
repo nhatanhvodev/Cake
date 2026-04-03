@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Footer Gấu Bakery</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        #footer {
+            background: #fff;
+            padding: 60px 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 50px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+
+        #footer .box {
+            flex: 1 1 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        #footer .logo img {
+            max-width: 140px;
+            margin-bottom: 20px;
+        }
+
+        #footer .box p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0;
+            color: #666;
+        }
+
+        #footer h1,
+        #footer h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            position: relative;
+            letter-spacing: 0.5px;
+        }
+
+        #footer h3::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: -6px;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 2px;
+            background: #8b4513;
+        }
+
+        .quick-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            max-width: 250px;
+        }
+
+        .quick-menu li {
+            margin-bottom: 16px;
+        }
+
+        .quick-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: 0.3s;
+        }
+
+        .quick-menu a:hover {
+            color: #8b4513;
+            transform: translateX(4px);
+        }
+
+        .quick-menu a i {
+            font-size: 18px;
+            color: #8b4513;
+        }
+
+        #contact p {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        #footer form {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 250px;
+            margin-bottom: 10px;
+        }
+
+        #footer input[type="email"] {
+            padding: 12px 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            text-align: center;
+            outline: none;
+        }
+
+        #footer input[type="email"]:focus {
+            border-color: #8b4513;
+        }
+
+        #footer button {
+            padding: 12px;
+            border: none;
+            background: #8b4513;
+            color: #fff;
+            border-radius: 4px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        #footer button:hover {
+            background: #5d2e0d;
+            box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2);
+        }
+
+        footer.bottom-footer {
+            background: #000;
+            text-align: center;
+            padding: 15px 10px;
+            font-size: 15px;
+            color: #fff;
+            margin-top: 0;
+        }
+
+        footer.bottom-footer p {
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 900px) {
+            #footer {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .quick-menu,
+            #footer form {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <section id="footer">
+
+        <div class="box">
+            <div class="logo">
+                <img src="/Cake/assets/img/logo.jpg" alt="Logo Gấu Bakery">
+            </div>
+            <p>
+                Chúng tôi tự hào mang đến cho quý khách những chiếc bánh thơm ngon,
+                an toàn và chất lượng vượt trội.
+            </p>
+        </div>
+
+        <div class="box">
+            <h3>HỖ TRỢ</h3>
+            <ul class="quick-menu">
+                <li><a href="/Cake/pages/shopping.php"><i class="fa-solid fa-truck"></i> CHÍNH SÁCH VẬN CHUYỂN</a></li>
+                <li><a href="/Cake/pages/privacy.php"><i class="fa-solid fa-shield-alt"></i> CHÍNH SÁCH BẢO MẬT</a></li>
+                <li><a href="/Cake/pages/policy.php"><i class="fa-solid fa-exchange-alt"></i> CHÍNH SÁCH ĐỔI TRẢ</a>
+                </li>
+                <li><a href="/Cake/pages/faq.php"><i class="fa-solid fa-question-circle"></i> CHÍNH SÁCH THANH TOÁN</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="box" id="contact">
+            <h3>LIÊN HỆ</h3>
+            <p>📍 Địa chỉ: Gấu Bakery</p>
+            <p>📞 Hotline: 0123 456 789</p>
+            <p>📧 Email: gaubakery@gmail.com</p>
+        </div>
+
+        <div class="box">
+            <h3>ĐĂNG KÝ NHẬN THÔNG BÁO SỰ KIỆN</h3>
+            <form onsubmit="return subscribeNotice()">
+                <input type="email" placeholder="Nhập email của bạn" required>
+                <button type="submit">ĐĂNG KÝ</button>
+            </form>
+        </div>
+
+    </section>
+
+    <footer class="bottom-footer">
+        <p>© 2025 Gấu Bakery. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function subscribeNotice() {
+            alert("Sẽ có thông báo về sự kiện cho bạn khi sự kiện bắt đầu");
+            return false;
+        }
+    </script>
+
+</body>
+
+</html>
