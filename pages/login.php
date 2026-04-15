@@ -383,14 +383,14 @@ $conn->close();
                 <div class="visual-stack">
                     <img src="/Cake/assets/img/banner1.jpg" alt="Bánh ngon mỗi ngày">
                     <div class="float-card float-one">
-                        <img src="/Cake/assets/uploads/banhngot/banh_69d9eb68d56c32.13741672.jpg" alt="Bánh ngọt">
+                        <img src="/Cake/assets/uploads/banhngot/banh_69dbab0d239db7.73922554.jpg" alt="Bánh ngọt">
                         <div>
                             <div style="font-size:12px; font-weight:600;">Bánh mới</div>
                             <div style="font-size:11px; opacity:.7;">Mỗi sáng</div>
                         </div>
                     </div>
                     <div class="float-card float-two">
-                        <img src="/Cake/assets/uploads/banhkem/banh_69da05b2dce992.03049715.jpg" alt="Bánh kem">
+                        <img src="/Cake/assets/uploads/banhngot/banh_69dbac321327a6.77842905.jpg" alt="Bánh kem">
                         <div>
                             <div style="font-size:12px; font-weight:600;">Đặc sắc</div>
                             <div style="font-size:11px; opacity:.7;">Bán chạy</div>
