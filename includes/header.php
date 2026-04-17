@@ -171,7 +171,7 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
     border-radius: 999px;
     background: var(--menu-surface);
     color: var(--header-accent);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     box-shadow: 0 8px 18px rgba(74, 29, 31, 0.08);
@@ -179,7 +179,7 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
   }
 
   .menu-toggle-btn i {
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .menu-toggle-btn:hover {
@@ -288,7 +288,7 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
   .cate-panel-links a {
     color: var(--header-accent);
     text-decoration: none;
-    font-size: 24px;
+    font-size: 16px;
     font-weight: 700;
     line-height: 1.35;
     transition: color 0.2s ease;
@@ -763,14 +763,11 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
         </button>
       </li>
       <li class="menu-tag-list" aria-label="Danh mục tìm kiếm nhanh">
-        <button type="button" class="menu-search-tag" data-search-keyword="Bánh Kem">Bánh Kem</button>
-        <button type="button" class="menu-search-tag" data-search-keyword="Bánh Bắp">Bánh Bắp</button>
+        <button type="button" class="menu-search-tag" data-search-keyword="Bánh Kem">Bánh Kem Sinh Nhật</button>
+        <button type="button" class="menu-search-tag" data-search-keyword="Bánh Kem Bắp">Bánh Kem Bắp</button>
         <button type="button" class="menu-search-tag" data-search-keyword="Cheese Cake">CheeseCake</button>
-        <button type="button" class="menu-search-tag" data-search-keyword="Rau Câu">Rau Câu</button>
         <button type="button" class="menu-search-tag" data-search-keyword="Bánh Cưới">Bánh Cưới</button>
-        <button type="button" class="menu-search-tag" data-search-keyword="Tea Break">Tea Break</button>
         <button type="button" class="menu-search-tag" data-search-keyword="Bánh Nướng">Bánh Nướng</button>
-        <button type="button" class="menu-search-tag" data-search-keyword="Gateaux">Gateaux</button>
         <button type="button" class="menu-search-tag" data-search-keyword="Muffin">Muffin</button>
       </li>
     </ul>
@@ -784,8 +781,8 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
         <li><a href="<?= BASE_URL ?>index.php">Trang chủ</a></li>
         <li><a href="<?= BASE_URL ?>pages/product.php">Sản phẩm</a></li>
         <li><a href="<?= BASE_URL ?>pages/favorites.php">Sản phẩm đã lưu</a></li>
-        <li><a href="<?= BASE_URL ?>pages/about.php">Giới thiệu</a></li>
-        <li><a href="<?= BASE_URL ?>pages/contact.php">Liên hệ</a></li>
+        <li><a href="<?= BASE_URL ?>pages/about.php">Về chúng tôi</a></li>
+        <li><a href="<?= BASE_URL ?>pages/contact.php">Liên hệ với chúng tôi</a></li>
       </ul>
     </div>
 
