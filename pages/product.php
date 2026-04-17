@@ -148,11 +148,34 @@ if ($isLoggedIn && $favoritesTableReady) {
 }
 
 function img($path) {
-    if (!$path) return '/Cake/assets/img/no-image.jpg';
-    if (strpos($path, 'assets/') === false && strpos($path, 'img/') === 0) {
-        $path = str_replace('img/', 'assets/img/', $path);
+    $fallback = '/Cake/assets/img/no-image.jpg';
+    if (!$path) return $fallback;
+
+    $path = trim((string) $path);
+    if ($path === '') return $fallback;
+
+    $path = str_replace('\\', '/', $path);
+    if (preg_match('#^(https?:)?//#i', $path) || str_starts_with($path, 'data:image/')) {
+        return $path;
     }
-    return '/Cake/' . ltrim($path, '/');
+
+    // Keep only project-relative path when SQL stores absolute machine path.
+    $cakePos = stripos($path, '/Cake/');
+    if ($cakePos !== false) {
+        $path = substr($path, $cakePos + 6);
+    } else {
+        $cakePos = stripos($path, 'Cake/');
+        if ($cakePos !== false) {
+            $path = substr($path, $cakePos + 5);
+        }
+    }
+
+    $path = ltrim($path, '/');
+    if (strpos($path, 'img/') === 0 || strpos($path, 'uploads/') === 0) {
+        $path = 'assets/' . $path;
+    }
+
+    return '/Cake/' . $path;
 }
 
 function slugify(string $value, ?int $id = null): string {

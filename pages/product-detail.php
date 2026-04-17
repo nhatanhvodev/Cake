@@ -11,14 +11,34 @@ $isFavorite = false;
 $favoritesTableReady = false;
 
 function imgPath($path) {
-    if (!$path) return '/Cake/assets/img/no-image.jpg';
-    if (strpos($path, 'admin/img/') === 0 || strpos($path, 'admin/') === 0) {
-        return '/Cake/' . ltrim($path, '/');
+    $fallback = '/Cake/assets/img/no-image.jpg';
+    if (!$path) return $fallback;
+
+    $path = trim((string) $path);
+    if ($path === '') return $fallback;
+
+    $path = str_replace('\\', '/', $path);
+    if (preg_match('#^(https?:)?//#i', $path) || str_starts_with($path, 'data:image/')) {
+        return $path;
     }
-    if (strpos($path, 'assets/') === false && strpos($path, 'img/') === 0) {
-        $path = str_replace('img/', 'assets/img/', $path);
+
+    // Keep only project-relative path when SQL stores absolute machine path.
+    $cakePos = stripos($path, '/Cake/');
+    if ($cakePos !== false) {
+        $path = substr($path, $cakePos + 6);
+    } else {
+        $cakePos = stripos($path, 'Cake/');
+        if ($cakePos !== false) {
+            $path = substr($path, $cakePos + 5);
+        }
     }
-    return '/Cake/' . ltrim($path, '/');
+
+    $path = ltrim($path, '/');
+    if (strpos($path, 'img/') === 0 || strpos($path, 'uploads/') === 0) {
+        $path = 'assets/' . $path;
+    }
+
+    return '/Cake/' . $path;
 }
 
 function safeTransliterate(string $value): string {
@@ -501,7 +521,7 @@ body {
 
 .related-card img {
     width: 100%;
-    height: 140px;
+    height: 300px;
     object-fit: cover;
     border-radius: 14px;
 }
