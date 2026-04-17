@@ -1311,6 +1311,7 @@ if (isset($_GET['export_revenue']) && isset($_SESSION['admin_logged_in'])) {
                 <a class="nav-link" href="admin.php?tab=products#products" data-tab="products" onclick="showTab(event, 'products')"><i class="bi bi-box-seam"></i> Sản phẩm</a>
                 <a class="nav-link" href="admin.php?tab=best-selling#best-selling" data-tab="best-selling" onclick="showTab(event, 'best-selling')"><i class="bi bi-star"></i> Best Selling</a>
                 <a class="nav-link" href="admin.php?tab=testimonials#testimonials" data-tab="testimonials" onclick="showTab(event, 'testimonials')"><i class="bi bi-chat-quote"></i> Đánh giá</a>
+                <a class="nav-link" href="/Cake/pages/admin-password-requests.php"><i class="bi bi-shield-lock"></i> Duyệt đổi mật khẩu</a>
                 <a class="nav-link" href="admin.php?tab=users#users" data-tab="users" onclick="showTab(event, 'users')"><i class="bi bi-people"></i> Khách hàng</a>
                 <a class="nav-link" href="admin.php?tab=promotions#promotions" data-tab="promotions" onclick="showTab(event, 'promotions')"><i class="bi bi-tags"></i> Khuyến mãi</a>
             </nav>
@@ -1769,24 +1770,45 @@ if (isset($_GET['export_revenue']) && isset($_SESSION['admin_logged_in'])) {
                         </thead>
                         <tbody>
                             <?php foreach ($reviews as $r): ?>
+                                <?php
+                                $reviewStatusRaw = (string) ($r['status'] ?? 'pending');
+                                $reviewStatusData = match ($reviewStatusRaw) {
+                                    'pending' => ['label' => 'Chờ duyệt', 'badge' => 'warning text-dark'],
+                                    'approved' => ['label' => 'Đã duyệt', 'badge' => 'success'],
+                                    'rejected' => ['label' => 'Đã từ chối', 'badge' => 'danger'],
+                                    default => ['label' => ucfirst($reviewStatusRaw), 'badge' => 'secondary']
+                                };
+                                ?>
                                 <tr>
                                     <td><?= htmlspecialchars($r['name']) ?></td>
                                     <td><?= htmlspecialchars($r['text']) ?></td>
                                     <td><?= htmlspecialchars($r['stars']) ?></td>
-                                    <td><span class="badge bg-light text-dark"><?= htmlspecialchars($r['status']) ?></span></td>
                                     <td>
-                                        <form method="POST" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                            <input type="hidden" name="review_id" value="<?= $r['id'] ?>">
-                                            <input type="hidden" name="review_status" value="approved">
-                                            <button name="update_review_status" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i></button>
-                                        </form>
-                                        <form method="POST" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                            <input type="hidden" name="review_id" value="<?= $r['id'] ?>">
-                                            <input type="hidden" name="review_status" value="rejected">
-                                            <button name="update_review_status" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
-                                        </form>
+                                        <span class="badge bg-<?= $reviewStatusData['badge'] ?>">
+                                            <?= htmlspecialchars($reviewStatusData['label']) ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ($reviewStatusRaw === 'pending'): ?>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                                <input type="hidden" name="review_id" value="<?= $r['id'] ?>">
+                                                <input type="hidden" name="review_status" value="approved">
+                                                <button name="update_review_status" class="btn btn-sm btn-success" title="Duyệt">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                                <input type="hidden" name="review_id" value="<?= $r['id'] ?>">
+                                                <input type="hidden" name="review_status" value="rejected">
+                                                <button name="update_review_status" class="btn btn-sm btn-outline-danger" title="Từ chối">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <span class="text-muted">Đã xử lý</span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

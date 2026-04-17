@@ -10,6 +10,20 @@ $role = $_SESSION['role'] ?? 'guest';
 
 // Lấy số loại sản phẩm (số dòng) trong giỏ hàng
 $cartItemCount = 0;
+$favoriteItemCount = 0;
+$favoritesTableReady = false;
+$passwordResetTableReady = false;
+if (isset($conn)) {
+  $favoriteTableResult = $conn->query("SHOW TABLES LIKE 'favorites'");
+  if ($favoriteTableResult) {
+    $favoritesTableReady = $favoriteTableResult->num_rows > 0;
+  }
+
+  $passwordResetTableResult = $conn->query("SHOW TABLES LIKE 'password_reset_requests'");
+  if ($passwordResetTableResult) {
+    $passwordResetTableReady = $passwordResetTableResult->num_rows > 0;
+  }
+}
 if (isset($conn) && isset($_SESSION['user_id'])) {
   $uid = (int) $_SESSION['user_id'];
   $stmtCount = $conn->prepare("SELECT COUNT(*) as total FROM cart WHERE user_id = ?");
@@ -19,6 +33,47 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
     $resCount = $stmtCount->get_result()->fetch_assoc();
     $cartItemCount = (int) ($resCount['total'] ?? 0);
     $stmtCount->close();
+  }
+
+  if ($favoritesTableReady) {
+    $stmtFavoriteCount = $conn->prepare("SELECT COUNT(*) as total FROM favorites WHERE user_id = ?");
+    if ($stmtFavoriteCount) {
+      $stmtFavoriteCount->bind_param("i", $uid);
+      $stmtFavoriteCount->execute();
+      $favoriteResCount = $stmtFavoriteCount->get_result()->fetch_assoc();
+      $favoriteItemCount = (int) ($favoriteResCount['total'] ?? 0);
+      $stmtFavoriteCount->close();
+    }
+  }
+
+  if ($passwordResetTableReady) {
+    $stmtApprovedReset = $conn->prepare(
+      "SELECT id FROM password_reset_requests WHERE user_id = ? AND status = 'approved' ORDER BY approved_at DESC, id DESC LIMIT 1"
+    );
+
+    if ($stmtApprovedReset) {
+      $stmtApprovedReset->bind_param("i", $uid);
+      $stmtApprovedReset->execute();
+      $approvedReset = $stmtApprovedReset->get_result()->fetch_assoc();
+      $stmtApprovedReset->close();
+
+      if ($approvedReset) {
+        $approvedId = (int) ($approvedReset['id'] ?? 0);
+        if (!isset($_SESSION['seen_password_reset_approved_ids']) || !is_array($_SESSION['seen_password_reset_approved_ids'])) {
+          $_SESSION['seen_password_reset_approved_ids'] = [];
+        }
+
+        if ($approvedId > 0 && !in_array($approvedId, $_SESSION['seen_password_reset_approved_ids'], true)) {
+          $_SESSION['password_reset_approved_toast'] = true;
+          $_SESSION['seen_password_reset_approved_ids'][] = $approvedId;
+
+          // Giữ session gọn nhẹ nếu user có rất nhiều lần đổi mật khẩu.
+          if (count($_SESSION['seen_password_reset_approved_ids']) > 30) {
+            $_SESSION['seen_password_reset_approved_ids'] = array_slice($_SESSION['seen_password_reset_approved_ids'], -30);
+          }
+        }
+      }
+    }
   }
 }
 ?>
@@ -453,7 +508,29 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
     align-items: center;
   }
 
+  .favorite-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
   .cart-badge {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background: #ff0000;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s;
+  }
+
+  .favorite-badge {
     position: absolute;
     top: -8px;
     right: -10px;
@@ -619,6 +696,10 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
     transform: scale(1.3);
   }
 
+  .favorite-badge.pop {
+    transform: scale(1.3);
+  }
+
   .notify-box {
     display: none;
   }
@@ -642,6 +723,11 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
         </div>
         <div id="user-actions">
           <a href="<?= BASE_URL ?>pages/account.php"><i class="fa-regular fa-user"></i></a>
+          <a href="<?= BASE_URL ?>pages/favorites.php" class="favorite-wrapper" aria-label="Sản phẩm yêu thích">
+            <i class="fa-regular fa-heart"></i>
+            <span id="header-favorite-badge" class="favorite-badge"
+              style="<?= $favoriteItemCount > 0 ? '' : 'display:none;' ?>"><?= $favoriteItemCount ?></span>
+          </a>
           <a href="<?= BASE_URL ?>pages/cart.php" class="cart-wrapper">
             <i class="fa-solid fa-cart-shopping"></i>
             <span id="header-cart-badge" class="cart-badge"
@@ -697,6 +783,7 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
       <ul class="cate-panel-links">
         <li><a href="<?= BASE_URL ?>index.php">Trang chủ</a></li>
         <li><a href="<?= BASE_URL ?>pages/product.php">Sản phẩm</a></li>
+        <li><a href="<?= BASE_URL ?>pages/favorites.php">Sản phẩm đã lưu</a></li>
         <li><a href="<?= BASE_URL ?>pages/about.php">Giới thiệu</a></li>
         <li><a href="<?= BASE_URL ?>pages/contact.php">Liên hệ</a></li>
       </ul>
@@ -995,6 +1082,11 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
     <?php unset($_SESSION['toast']); ?>
   <?php endif; ?>
 
+  <?php if (!empty($_SESSION['password_reset_approved_toast'])): ?>
+    window.showToast('Đã đổi mật khẩu thành công!', 'success');
+    <?php unset($_SESSION['password_reset_approved_toast']); ?>
+  <?php endif; ?>
+
   <?php if (!empty($_GET['toast']) && $_GET['toast'] === 'logout'): ?>
     window.showToast('Đăng xuất thành công!', 'success');
     if (history.replaceState) {
@@ -1053,5 +1145,20 @@ if (isset($conn) && isset($_SESSION['user_id'])) {
     if (!badge) return;
     let current = parseInt(badge.innerText || '0');
     window.setCartBadge(current + 1);
+  };
+
+  window.setFavoriteBadge = function (count) {
+    let badge = document.getElementById('header-favorite-badge');
+    if (!badge) return;
+    let n = parseInt(count) || 0;
+    if (n > 0) {
+      badge.innerText = n;
+      badge.style.display = 'inline-block';
+      badge.classList.add('pop');
+      setTimeout(function () { badge.classList.remove('pop'); }, 300);
+    } else {
+      badge.style.display = 'none';
+      badge.innerText = '0';
+    }
   };
 </script>

@@ -103,17 +103,61 @@ if (isset($_POST['change_password'])) {
         $error = "Mật khẩu mới quá ngắn (tối thiểu 6 ký tự).";
     } else {
         $hash = password_hash($new_pass, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("UPDATE users SET password=? WHERE id=?");
-        $stmt->bind_param("si", $hash, $user_id);
+        $reset_token = bin2hex(random_bytes(16));
 
-        if ($stmt->execute()) {
-            $_SESSION['success'] = "🔐 Đổi mật khẩu thành công!";
-            header("Location: account.php");
-            exit;
+        // Nếu đã có yêu cầu pending thì cập nhật lại nội dung yêu cầu gần nhất.
+        $stmtPending = $conn->prepare(
+            "SELECT id FROM password_reset_requests WHERE user_id = ? AND status = 'pending' ORDER BY id DESC LIMIT 1"
+        );
+
+        if (!$stmtPending) {
+            $error = "Lỗi khi tạo yêu cầu đổi mật khẩu.";
         } else {
-            $error = "Lỗi khi cập nhật mật khẩu.";
+            $stmtPending->bind_param("i", $user_id);
+            $stmtPending->execute();
+            $pendingRequest = $stmtPending->get_result()->fetch_assoc();
+            $stmtPending->close();
+
+            if ($pendingRequest) {
+                $request_id = (int) $pendingRequest['id'];
+                $stmtUpdate = $conn->prepare(
+                    "UPDATE password_reset_requests
+                     SET reset_token = ?, new_password = ?, status = 'pending', approved_at = NULL, created_at = NOW()
+                     WHERE id = ?"
+                );
+
+                if (!$stmtUpdate) {
+                    $error = "Lỗi khi cập nhật yêu cầu đổi mật khẩu.";
+                } else {
+                    $stmtUpdate->bind_param("ssi", $reset_token, $hash, $request_id);
+                    if ($stmtUpdate->execute()) {
+                        $_SESSION['success'] = "🔐 Yêu cầu đổi mật khẩu đã được cập nhật. Vui lòng chờ admin duyệt.";
+                        header("Location: account.php");
+                        exit;
+                    }
+                    $error = "Lỗi khi gửi yêu cầu đổi mật khẩu.";
+                    $stmtUpdate->close();
+                }
+            } else {
+                $stmtCreate = $conn->prepare(
+                    "INSERT INTO password_reset_requests (user_id, reset_token, new_password, status)
+                     VALUES (?, ?, ?, 'pending')"
+                );
+
+                if (!$stmtCreate) {
+                    $error = "Lỗi khi tạo yêu cầu đổi mật khẩu.";
+                } else {
+                    $stmtCreate->bind_param("iss", $user_id, $reset_token, $hash);
+                    if ($stmtCreate->execute()) {
+                        $_SESSION['success'] = "🔐 Yêu cầu đổi mật khẩu đã được gửi. Vui lòng chờ admin duyệt.";
+                        header("Location: account.php");
+                        exit;
+                    }
+                    $error = "Lỗi khi gửi yêu cầu đổi mật khẩu.";
+                    $stmtCreate->close();
+                }
+            }
         }
-        $stmt->close();
     }
 }
 
@@ -559,6 +603,7 @@ foreach ($orders as $order) {
             </div>
             <div class="hero-actions">
                 <a href="/Cake/pages/product.php" class="btn-outline"><i class="fa-solid fa-cookie"></i> Mua thêm</a>
+                <a href="/Cake/pages/favorites.php" class="btn-soft"><i class="fa-regular fa-heart"></i> Sản phẩm đã lưu</a>
             </div>
         </div>
 

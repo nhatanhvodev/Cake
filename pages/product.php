@@ -18,6 +18,8 @@ $ten_loai = [
 $loai_active = $_GET['loai'] ?? 'ngot';
 $search = trim($_GET['search'] ?? '');
 $san_pham = [];
+$favoriteIds = [];
+$favoritesTableReady = false;
 $today = date('Y-m-d');
 
 function safeTransliterate(string $value): string {
@@ -121,6 +123,27 @@ if ($search !== '') {
         $stmt->bind_param("sss", $today, $today, $loai);
         $stmt->execute();
         $san_pham[$loai] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+}
+
+if ($conn) {
+    $favoriteTableResult = $conn->query("SHOW TABLES LIKE 'favorites'");
+    if ($favoriteTableResult) {
+        $favoritesTableReady = $favoriteTableResult->num_rows > 0;
+    }
+}
+
+if ($isLoggedIn && $favoritesTableReady) {
+    $uid = (int) $_SESSION['user_id'];
+    $stmt = $conn->prepare("SELECT banh_id FROM favorites WHERE user_id = ?");
+    if ($stmt) {
+        $stmt->bind_param('i', $uid);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        foreach ($rows as $row) {
+            $favoriteIds[(int) $row['banh_id']] = true;
+        }
+        $stmt->close();
     }
 }
 
@@ -289,7 +312,6 @@ body {
 }
 
 .add-btn {
-    margin-top: auto;
     background: #4a1d1f;
     color: #fbedcd;
     border: none;
@@ -308,6 +330,42 @@ body {
 .add-btn:hover {
     background: #2f1415;
     box-shadow: 0 12px 20px rgba(74, 29, 31, 0.25);
+}
+
+.product-actions {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.product-actions .add-btn {
+    flex: 1;
+}
+
+.fav-btn {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    border: 1px solid #eecfa6;
+    border-radius: 0;
+    background: #fff9f1;
+    color: #8a5a3a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fav-btn:hover {
+    background: #fcebd5;
+}
+
+.fav-btn.is-active {
+    background: #ffefef;
+    border-color: #f3b8b8;
+    color: #b42318;
 }
 
 .hidden { display: none; }
@@ -357,6 +415,7 @@ body {
                         <p style="color:#888">Không có sản phẩm nào.</p>
                     <?php endif; ?>
                     <?php foreach ($ds as $p): ?>
+                        <?php $isFavorite = isset($favoriteIds[(int) $p['id']]); ?>
                         <div class="product-card">
                             <?php $slug = !empty($p['slug']) ? $p['slug'] : slugify($p['ten_banh'], (int) $p['id']); ?>
                             <a class="product-link" href="/Cake/product/<?= urlencode($slug) ?>">
@@ -375,10 +434,19 @@ body {
                                     <span class="current-price"><?= number_format($p['gia']) ?>đ</span>
                                 <?php endif; ?>
                             </div>
-                            <button class="add-btn"
-                                    onclick="addCartQuick(<?= $p['id'] ?>)">
-                                <i class="fa-solid fa-cart-plus"></i> Thêm vào giỏ
-                            </button>
+                            <div class="product-actions">
+                                <button class="add-btn"
+                                        onclick="addCartQuick(<?= $p['id'] ?>)">
+                                    <i class="fa-solid fa-cart-plus"></i> Thêm vào giỏ
+                                </button>
+                                <button type="button"
+                                        class="fav-btn <?= $isFavorite ? 'is-active' : '' ?>"
+                                        data-product-id="<?= (int) $p['id'] ?>"
+                                        aria-label="Yêu thích sản phẩm"
+                                        onclick="toggleFavorite(this)">
+                                    <i class="<?= $isFavorite ? 'fa-solid' : 'fa-regular' ?> fa-heart"></i>
+                                </button>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -411,6 +479,41 @@ function addCartQuick(productId) {
         } else {
             window.showToast('Không thêm được, vui lòng thử lại!', 'error');
         }
+    })
+    .catch(() => window.showToast('Lỗi kết nối máy chủ!', 'error'));
+}
+
+function toggleFavorite(button) {
+    const productId = parseInt(button.dataset.productId || '0', 10);
+    if (!productId) return;
+
+    fetch('/Cake/pages/favorites.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `action=toggle&banh_id=${productId}`
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (!d.success) {
+            window.showToast(d.message || 'Không thể cập nhật danh sách yêu thích.', 'error');
+            if (d.require_login) {
+                window.location.href = '/Cake/pages/login.php';
+            }
+            return;
+        }
+
+        const isFav = !!d.is_favorite;
+        const icon = button.querySelector('i');
+        button.classList.toggle('is-active', isFav);
+        if (icon) {
+            icon.className = (isFav ? 'fa-solid' : 'fa-regular') + ' fa-heart';
+        }
+
+        if (typeof d.favorite_count !== 'undefined' && window.setFavoriteBadge) {
+            window.setFavoriteBadge(d.favorite_count);
+        }
+
+        window.showToast(d.message || (isFav ? 'Đã lưu sản phẩm.' : 'Đã bỏ lưu sản phẩm.'), 'success');
     })
     .catch(() => window.showToast('Lỗi kết nối máy chủ!', 'error'));
 }

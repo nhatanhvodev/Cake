@@ -6,6 +6,9 @@ require_once '../config/connect.php';
 $pageTitle = 'Chi tiết sản phẩm';
 $slug = trim($_GET['slug'] ?? '');
 $today = date('Y-m-d');
+$isLoggedIn = isset($_SESSION['user_id']);
+$isFavorite = false;
+$favoritesTableReady = false;
 
 function imgPath($path) {
     if (!$path) return '/Cake/assets/img/no-image.jpg';
@@ -113,6 +116,25 @@ if (!$selected) {
     http_response_code(404);
     echo 'Không tìm thấy sản phẩm.';
     exit;
+}
+
+if ($conn) {
+    $favoriteTableResult = $conn->query("SHOW TABLES LIKE 'favorites'");
+    if ($favoriteTableResult) {
+        $favoritesTableReady = $favoriteTableResult->num_rows > 0;
+    }
+}
+
+if ($isLoggedIn && $favoritesTableReady) {
+    $uid = (int) $_SESSION['user_id'];
+    $productId = (int) $selected['id'];
+    $stmt = $conn->prepare("SELECT id FROM favorites WHERE user_id = ? AND banh_id = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param('ii', $uid, $productId);
+        $stmt->execute();
+        $isFavorite = (bool) $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+    }
 }
 
 $currentSlug = $selected['slug'] ?? '';
@@ -426,6 +448,30 @@ body {
     cursor: pointer;
 }
 
+.wishlist-btn {
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 1px solid #e7d0b1;
+    background: #fff7ed;
+    color: #7a4725;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.wishlist-btn:hover {
+    background: #fcebd5;
+}
+
+.wishlist-btn.is-active {
+    background: #ffefef;
+    border-color: #f3b8b8;
+    color: #b42318;
+}
+
 .section-card {
     background: #fff;
     border-radius: 24px;
@@ -612,6 +658,14 @@ body {
                 <input class="qty-input" type="number" id="detailQty" value="1" min="1">
                 <button class="cta-btn" onclick="addDetailToCart(<?= (int) $selected['id'] ?>, '<?= htmlspecialchars($selected['ten_banh'], ENT_QUOTES) ?>', <?= (float) ($selected['gia_khuyen_mai'] ?: $selected['gia']) ?>, '<?= imgPath($selected['hinh_anh']) ?>')">
                     Thêm vào giỏ
+                </button>
+                <button type="button"
+                        class="wishlist-btn <?= $isFavorite ? 'is-active' : '' ?>"
+                        id="detailFavoriteBtn"
+                        data-product-id="<?= (int) $selected['id'] ?>"
+                        onclick="toggleDetailFavorite(this)">
+                    <i class="<?= $isFavorite ? 'fa-solid' : 'fa-regular' ?> fa-heart"></i>
+                    <span><?= $isFavorite ? 'Đã lưu' : 'Lưu sản phẩm' ?></span>
                 </button>
             </div>
         </div>
@@ -804,6 +858,53 @@ function addDetailToCart(id, name, price, imgUrl) {
             }
         } else if (window.showToast) {
             window.showToast('Không thêm được, vui lòng thử lại!', 'error');
+        }
+    })
+    .catch(() => {
+        if (window.showToast) {
+            window.showToast('Lỗi kết nối máy chủ!', 'error');
+        }
+    });
+}
+
+function toggleDetailFavorite(button) {
+    const productId = parseInt(button.dataset.productId || '0', 10);
+    if (!productId) return;
+
+    fetch('/Cake/pages/favorites.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `action=toggle&banh_id=${productId}`
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (!d.success) {
+            if (window.showToast) {
+                window.showToast(d.message || 'Không thể cập nhật danh sách yêu thích.', 'error');
+            }
+            if (d.require_login) {
+                window.location.href = '/Cake/pages/login.php';
+            }
+            return;
+        }
+
+        const isFav = !!d.is_favorite;
+        const icon = button.querySelector('i');
+        const text = button.querySelector('span');
+        button.classList.toggle('is-active', isFav);
+        if (icon) {
+            icon.className = (isFav ? 'fa-solid' : 'fa-regular') + ' fa-heart';
+        }
+        if (text) {
+            text.textContent = isFav ? 'Đã lưu' : 'Lưu sản phẩm';
+        }
+
+        if (typeof d.favorite_count !== 'undefined' && window.setFavoriteBadge) {
+            window.setFavoriteBadge(d.favorite_count);
+        }
+
+        if (window.showToast) {
+            window.showToast(d.message || (isFav ? 'Đã lưu sản phẩm.' : 'Đã bỏ lưu sản phẩm.'), 'success');
         }
     })
     .catch(() => {
